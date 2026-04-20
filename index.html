@@ -5,178 +5,364 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Чекер списков РФ — поиск по имени</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>body { font-family: system-ui, sans-serif; }</style>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .btn-loading { opacity: 0.7; pointer-events: none; }
+    .tooltip { border-bottom: 1px dashed #9ca3af; cursor: help; }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-6">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold text-center mb-2">Чекер списков РФ</h1>
-    <p class="text-center text-gray-600 mb-8">Поиск по имени • Иноагенты и нежелательные организации</p>
+<body class="bg-gray-50 min-h-screen p-4 md:p-6">
 
-    <!-- Кнопки загрузки -->
-    <div class="flex flex-wrap gap-3 justify-center mb-8">
-      <button onclick="loadFromURL('foreign')" 
-              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium">
-        🌐 Загрузить иноагентов (fz255)
-      </button>
-      <button onclick="loadFromURL('undesirable')" 
-              class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium">
-        🌐 Загрузить нежелательные организации (fz255)
-      </button>
-      
-      <label class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-medium cursor-pointer">
-        📂 Загрузить свой JSON
-        <input type="file" accept=".json" onchange="handleFile(this)" class="hidden">
-      </label>
-    </div>
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold text-center mb-2">🔍 Чекер списков РФ</h1>
+  <p class="text-center text-gray-600 mb-4">Поиск по реестрам иноагентов и нежелательных организаций</p>
 
-    <div id="status" class="mb-8 bg-white rounded-2xl shadow p-4 text-sm"></div>
-
-    <!-- Поиск -->
-    <div class="bg-white rounded-3xl shadow p-8">
-      <div class="flex gap-3 mb-6">
-        <input id="searchInput" type="text" 
-               class="flex-1 p-5 rounded-2xl border focus:border-blue-500 text-base"
-               placeholder="Введите ФИО или название организации">
-        
-        <select id="typeFilter" class="p-5 rounded-2xl border">
-          <option value="">Все списки</option>
-          <option value="иноагент">Только иноагенты</option>
-          <option value="нежелательная">Только нежелательные</option>
-        </select>
+  <!-- Инструкция -->
+  <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 text-sm text-gray-700">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">📘</span>
+      <div class="space-y-1">
+        <p class="font-semibold">Как пользоваться:</p>
+        <ol class="list-decimal list-inside space-y-1">
+          <li>Загрузите актуальные реестры с помощью кнопок ниже (данные сохраняются в браузере).</li>
+          <li>Введите ФИО или название организации в поле поиска.</li>
+          <li>При необходимости выберите фильтр по типу списка.</li>
+          <li>Нажмите «Искать» — результаты появятся ниже.</li>
+        </ol>
+        <p class="mt-2 text-gray-600">
+          <span class="tooltip" title="Репозитории fz255 на GitHub">📂 Источники данных:</span>
+          <a href="https://github.com/fz255/foreign-agents" target="_blank" class="text-blue-600 underline ml-1">иноагенты</a> ·
+          <a href="https://github.com/fz255/undesirable-organizations" target="_blank" class="text-red-600 underline">нежелательные</a>
+        </p>
       </div>
-
-      <button onclick="searchName()" 
-              class="w-full bg-green-600 hover:bg-green-700 text-white py-5 rounded-2xl text-xl font-semibold">
-        🔍 Искать
-      </button>
-
-      <div id="searchResults" class="mt-8"></div>
     </div>
   </div>
 
-  <script>
-    let DB = [];
+  <!-- Кнопки управления -->
+  <div class="flex flex-wrap gap-3 justify-center mb-6">
+    <button id="loadForeignBtn" onclick="loadFromURL('foreign')" 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-medium transition flex items-center gap-2">
+      <span>🌐</span> Загрузить иноагентов
+    </button>
+    <button id="loadUndesirableBtn" onclick="loadFromURL('undesirable')" 
+            class="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-xl font-medium transition flex items-center gap-2">
+      <span>🌐</span> Загрузить нежелательные
+    </button>
+    
+    <label class="bg-gray-700 hover:bg-gray-800 text-white px-5 py-3 rounded-xl font-medium cursor-pointer transition flex items-center gap-2">
+      <span>📂</span> Загрузить свой JSON
+      <input type="file" accept=".json,.txt,application/json" onchange="handleFile(this)" class="hidden">
+    </label>
 
-    function normalize(str) {
-      return str.toLowerCase().replace(/\s+/g, ' ').trim();
+    <button onclick="clearDatabase()" 
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-3 rounded-xl font-medium transition text-sm">
+      🗑️ Сбросить базу
+    </button>
+  </div>
+
+  <!-- Статус -->
+  <div id="status" class="mb-6 bg-white rounded-2xl shadow p-5 border border-gray-100"></div>
+
+  <!-- Поиск -->
+  <div class="bg-white rounded-3xl shadow-lg p-6 md:p-8">
+    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+      <input id="searchInput" type="text" 
+             class="flex-1 p-4 rounded-2xl border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 text-base"
+             placeholder="Например: Иванов Иван Иванович или Amnesty International">
+      
+      <select id="typeFilter" class="p-4 rounded-2xl border border-gray-300 bg-white">
+        <option value="">Все списки</option>
+        <option value="иноагент">Только иноагенты</option>
+        <option value="нежелательная">Только нежелательные</option>
+      </select>
+    </div>
+
+    <button id="searchButton" onclick="searchName()" 
+            class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl text-lg font-semibold transition">
+      🔍 Искать
+    </button>
+
+    <div class="mt-4 text-sm text-gray-500 flex flex-wrap gap-2">
+      <span class="font-medium">Примеры:</span>
+      <button onclick="fillExample('Галкин')" class="underline hover:text-blue-600">Галкин</button> ·
+      <button onclick="fillExample('ФБК')" class="underline hover:text-blue-600">ФБК</button> ·
+      <button onclick="fillExample('Amnesty')" class="underline hover:text-blue-600">Amnesty</button>
+    </div>
+
+    <div id="searchResults" class="mt-8"></div>
+  </div>
+</div>
+
+<script>
+  // ---------- Глобальные переменные ----------
+  let DB = [];
+  let isLoading = false;
+
+  function normalize(str) {
+    return str.toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // ---------- Извлечение минимально необходимых полей ----------
+  function extractEssential(item, type) {
+    // Ищем имя
+    const name = item.fullName || item.name || item.fio || item.title || '';
+    if (!name) return null;
+
+    // Извлекаем только нужные поля для отображения
+    return {
+      name: name,
+      type: type,
+      dob: item.dob || item.birth_date || item.birthDate || '',
+      dateIn: item.dateIn || item.inclusionDate || '',
+      dateOut: item.dateOut || item.exclusionDate || '',
+      law: item.law || item.reason || ''
+    };
+  }
+
+  // ---------- Работа с localStorage ----------
+  function loadDB() {
+    const saved = localStorage.getItem('rfBlacklistDB');
+    if (saved) {
+      try { 
+        DB = JSON.parse(saved); 
+      } catch(e) { 
+        DB = []; 
+      }
+    } else {
+      DB = [];
     }
+    updateStatus();
+  }
 
-    function loadDB() {
-      const saved = localStorage.getItem('rfBlacklistDB');
-      if (saved) DB = JSON.parse(saved);
-      updateStatus();
-    }
-
-    function saveDB() {
+  function saveDB() {
+    try {
       localStorage.setItem('rfBlacklistDB', JSON.stringify(DB));
       updateStatus();
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
+        alert('⚠️ Превышен лимит хранилища браузера.\n\nПожалуйста, загружайте только один список или очистите базу перед загрузкой нового.');
+        // Откатываем последнее добавление? Нет, просто предупреждаем.
+      } else {
+        console.error('Ошибка сохранения:', e);
+      }
+    }
+  }
+
+  function clearDatabase() {
+    if (!confirm('Удалить все загруженные данные из памяти браузера?')) return;
+    DB = [];
+    localStorage.removeItem('rfBlacklistDB');
+    localStorage.removeItem('rfLastUpdate');
+    updateStatus();
+    document.getElementById('searchResults').innerHTML = '';
+  }
+
+  // ---------- Отображение статуса ----------
+  function updateStatus() {
+    const agents = DB.filter(i => i.type === 'иноагент').length;
+    const und = DB.filter(i => i.type === 'нежелательная').length;
+    const last = localStorage.getItem('rfLastUpdate') || '—';
+    
+    const statusDiv = document.getElementById('status');
+    
+    if (DB.length === 0) {
+      statusDiv.innerHTML = `
+        <div class="text-center py-2">
+          <p class="text-gray-500 mb-2">📭 База данных пуста</p>
+          <p class="text-sm text-gray-400">Нажмите кнопки выше, чтобы загрузить реестры иноагентов и нежелательных организаций.</p>
+        </div>
+      `;
+      return;
     }
 
-    function updateStatus() {
-      const agents = DB.filter(i => i.type === 'иноагент').length;
-      const und = DB.filter(i => i.type === 'нежелательная').length;
-      const last = localStorage.getItem('rfLastUpdate') || '—';
+    statusDiv.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+        <div class="bg-blue-50 rounded-xl p-3">
+          <span class="text-blue-700 font-bold text-xl">${agents}</span>
+          <p class="text-blue-600 text-sm">иноагентов</p>
+        </div>
+        <div class="bg-red-50 rounded-xl p-3">
+          <span class="text-red-700 font-bold text-xl">${und}</span>
+          <p class="text-red-600 text-sm">нежелательных</p>
+        </div>
+        <div class="bg-gray-100 rounded-xl p-3">
+          <span class="text-gray-700 font-medium">${last}</span>
+          <p class="text-gray-500 text-sm">обновлено</p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 text-center mt-3">Данные хранятся локально в вашем браузере</p>
+    `;
+  }
+
+  // ---------- Загрузка из URL ----------
+  async function loadFromURL(type) {
+    if (isLoading) return;
+    
+    let url, listType, btnId;
+    if (type === 'foreign') {
+      url = 'https://raw.githubusercontent.com/fz255/foreign-agents/main/registry.json';
+      listType = 'иноагент';
+      btnId = 'loadForeignBtn';
+    } else if (type === 'undesirable') {
+      url = 'https://raw.githubusercontent.com/fz255/undesirable-organizations/main/registry.json';
+      listType = 'нежелательная';
+      btnId = 'loadUndesirableBtn';
+    } else return;
+
+    const btn = document.getElementById(btnId);
+    const originalText = btn.innerHTML;
+    
+    try {
+      isLoading = true;
+      btn.classList.add('btn-loading');
+      btn.innerHTML = `<span>⏳</span> Загрузка...`;
       
-      document.getElementById('status').innerHTML = `
-        <div class="grid grid-cols-3 gap-4 text-center text-sm">
-          <div>Иноагенты: <span class="text-blue-600">${agents}</span></div>
-          <div>Нежелательные: <span class="text-red-600">${und}</span></div>
-          <div>Обновлено: <span class="text-gray-500">${last}</span></div>
-        </div>`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      
+      addToDB(data, listType);
+      
+    } catch(e) {
+      console.warn('Ошибка загрузки:', e);
+      alert(`⚠️ Не удалось загрузить автоматически.\n\nПричина: ${e.message}\n\nВы можете скачать JSON вручную с GitHub и использовать кнопку "Загрузить свой JSON".`);
+    } finally {
+      isLoading = false;
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = originalText;
     }
+  }
 
-    async function loadFromURL(type) {
-      let url, listType;
-      if (type === 'foreign') {
-        url = 'https://raw.githubusercontent.com/fz255/foreign-agents/main/registry.json';
-        listType = 'иноагент';
-      } else if (type === 'undesirable') {
-        url = 'https://raw.githubusercontent.com/fz255/undesirable-organizations/main/registry.json';
-        listType = 'нежелательная';
-      }
-
+  // ---------- Загрузка из файла ----------
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        addToDB(data, listType);
-      } catch(e) {
-        alert('Не удалось загрузить автоматически.\n\nСкачай JSON вручную и используй кнопку "Загрузить свой JSON"');
-      }
-    }
-
-    function handleFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          const type = prompt('Тип списка? (иноагент / нежелательная)', 'иноагент');
-          if (type) addToDB(data, type);
-          input.value = '';
-        } catch(err) {
-          alert('Ошибка в JSON-файле');
+        const data = JSON.parse(e.target.result);
+        let type = prompt('Укажите тип списка:\n\nВведите "иноагент" или "нежелательная"', 'иноагент');
+        if (!type) return;
+        type = type.trim().toLowerCase();
+        if (type === 'иноагент' || type === 'нежелательная') {
+          addToDB(data, type);
+        } else {
+          alert('Тип должен быть "иноагент" или "нежелательная"');
         }
-      };
-      reader.readAsText(file);
-    }
-
-    function addToDB(data, listType) {
-      let count = 0;
-      const arr = Array.isArray(data) ? data : [data];
-      arr.forEach(item => {
-        const name = item.fullName || item.name || item.fio || item.title || '';
-        if (!name) return;
-        if (!DB.some(i => i.name === name && i.type === listType)) {
-          DB.push({ name, type: listType, details: item });
-          count++;
-        }
-      });
-      saveDB();
-      const time = new Date().toLocaleString('ru-RU');
-      localStorage.setItem('rfLastUpdate', time);
-      alert(`✅ Загружено ${count} записей (${listType})`);
-    }
-
-    function searchName() {
-      const query = normalize(document.getElementById('searchInput').value);
-      const filter = document.getElementById('typeFilter').value;
-      if (!query) return alert('Введите имя или название');
-
-      const results = DB.filter(item => 
-        normalize(item.name).includes(query) && (!filter || item.type === filter)
-      );
-
-      const div = document.getElementById('searchResults');
-      if (!results.length) {
-        div.innerHTML = `<p class="text-center text-gray-500 py-12 text-xl">Ничего не найдено</p>`;
-        return;
+      } catch(err) {
+        alert('❌ Ошибка чтения JSON. Проверьте формат файла.');
+      } finally {
+        input.value = '';
       }
+    };
+    reader.readAsText(file);
+  }
 
-      let html = `<p class="mb-4 font-medium text-lg">Найдено: ${results.length}</p>`;
-      results.forEach(r => {
-        const d = r.details;
-        html += `
-          <div class="bg-white border rounded-2xl p-6 mb-4">
-            <span class="px-4 py-1 text-xs font-medium rounded-full 
-              ${r.type==='иноагент' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}">
+  // ---------- Добавление записей в БД (оптимизированное) ----------
+  function addToDB(data, listType) {
+    let count = 0;
+    const arr = Array.isArray(data) ? data : [data];
+    
+    arr.forEach(item => {
+      const essential = extractEssential(item, listType);
+      if (!essential) return;
+      
+      // Проверяем, нет ли уже записи с таким именем и типом
+      const exists = DB.some(i => i.name === essential.name && i.type === listType);
+      if (!exists) {
+        DB.push(essential);
+        count++;
+      }
+    });
+    
+    if (count > 0) {
+      // Попытка сохранить
+      try {
+        saveDB();
+        const time = new Date().toLocaleString('ru-RU', { 
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+        localStorage.setItem('rfLastUpdate', time);
+        alert(`✅ Загружено ${count} новых записей (${listType})`);
+      } catch (e) {
+        alert(`⚠️ Не удалось сохранить данные: превышен лимит хранилища.\n\nПопробуйте очистить базу и загрузить только один список.`);
+        // Откатываем добавленные записи из памяти
+        DB = DB.filter(i => !(arr.some(item => item.name === i.name && i.type === listType)));
+        updateStatus();
+      }
+    } else {
+      alert(`ℹ️ Новых записей не найдено (${listType})`);
+    }
+  }
+
+  // ---------- Поиск ----------
+  function searchName() {
+    const query = normalize(document.getElementById('searchInput').value);
+    const filter = document.getElementById('typeFilter').value;
+    
+    if (!query) {
+      alert('🔎 Введите имя, фамилию или название организации');
+      return;
+    }
+
+    const results = DB.filter(item => 
+      normalize(item.name).includes(query) && 
+      (!filter || item.type === filter)
+    );
+
+    const div = document.getElementById('searchResults');
+    
+    if (!results.length) {
+      div.innerHTML = `
+        <div class="text-center py-12 bg-gray-50 rounded-2xl">
+          <p class="text-gray-400 text-2xl mb-2">🔍</p>
+          <p class="text-gray-500 text-lg">Ничего не найдено</p>
+          <p class="text-gray-400 text-sm mt-2">Попробуйте изменить запрос или загрузить другие списки.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `<p class="mb-4 font-medium text-lg">🔎 Найдено совпадений: ${results.length}</p>`;
+    
+    results.forEach(r => {
+      html += `
+        <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-4 shadow-sm hover:shadow transition">
+          <div class="flex flex-wrap items-center gap-3 mb-2">
+            <span class="px-3 py-1 text-xs font-semibold rounded-full 
+              ${r.type === 'иноагент' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}">
               ${r.type.toUpperCase()}
             </span>
-            <h3 class="font-semibold text-2xl mt-3">${r.name}</h3>
-            <div class="mt-4 text-sm text-gray-600 space-y-2">
-              ${d.dob || d.birth_date ? `<p><strong>Дата рождения:</strong> ${d.dob || d.birth_date}</p>` : ''}
-              ${d.dateIn ? `<p><strong>Дата включения:</strong> ${d.dateIn}</p>` : ''}
-              ${d.dateOut ? `<p class="text-red-600"><strong>Дата исключения:</strong> ${d.dateOut}</p>` : ''}
-              ${d.law ? `<p><strong>Основание:</strong> ${d.law}</p>` : ''}
-            </div>
-          </div>`;
-      });
-      div.innerHTML = html;
-    }
+            ${r.dateIn ? `<span class="text-xs text-gray-500">📅 включён: ${r.dateIn}</span>` : ''}
+          </div>
+          <h3 class="font-bold text-xl break-words">${r.name}</h3>
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
+            ${r.dob ? `<p><span class="font-medium">Дата рождения:</span> ${r.dob}</p>` : ''}
+            ${r.dateOut ? `<p class="text-red-600"><span class="font-medium">❌ Исключён:</span> ${r.dateOut}</p>` : ''}
+            ${r.law ? `<p class="col-span-full text-gray-500 text-xs mt-1"><span class="font-medium">Основание:</span> ${r.law}</p>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    
+    div.innerHTML = html;
+  }
 
-    // Запуск
-    loadDB();
-  </script>
+  function fillExample(text) {
+    document.getElementById('searchInput').value = text;
+    searchName();
+  }
+
+  // Инициализация
+  loadDB();
+
+  document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      searchName();
+    }
+  });
+</script>
 </body>
 </html>
