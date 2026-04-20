@@ -12,23 +12,24 @@
     <h1 class="text-4xl font-bold text-center mb-1">Чекер списков РФ</h1>
     <p class="text-center text-gray-600 mb-8">Быстрый поиск по иноагентам и нежелательным организациям</p>
 
+    <!-- Onboarding -->
     <div id="onboarding" class="bg-blue-50 border border-blue-300 rounded-3xl p-8 mb-10">
       <h2 class="text-2xl font-semibold text-center mb-6">Как пользоваться?</h2>
       <div class="grid md:grid-cols-3 gap-6 text-center">
         <div>
           <div class="text-5xl mb-3">1️⃣</div>
           <p class="font-medium">Загрузи списки</p>
-          <p class="text-sm text-gray-600">Нажми кнопки «Загрузить иноагентов» и «Загрузить нежелательные»</p>
+          <p class="text-sm text-gray-600">Нажми кнопки выше</p>
         </div>
         <div>
           <div class="text-5xl mb-3">2️⃣</div>
-          <p class="font-medium">Введи имя или название</p>
-          <p class="text-sm text-gray-600">Можно в любом порядке: «Алексей Навальный» или «Навальный Алексей»</p>
+          <p class="font-medium">Для людей — фамилия</p>
+          <p class="text-sm text-gray-600">Для организаций — название</p>
         </div>
         <div>
           <div class="text-5xl mb-3">3️⃣</div>
           <p class="font-medium">Нажми «Искать»</p>
-          <p class="text-sm text-gray-600">Результат появится мгновенно</p>
+          <p class="text-sm text-gray-600">Результат мгновенно</p>
         </div>
       </div>
     </div>
@@ -59,10 +60,20 @@
 
     <!-- Поиск -->
     <div class="bg-white rounded-3xl shadow p-8">
+      
+      <!-- Подсказка для поиска личностей -->
+      <div class="mb-6 bg-amber-50 border border-amber-300 rounded-2xl p-4 text-amber-800 flex items-start gap-3">
+        <span class="text-2xl">💡</span>
+        <div>
+          <strong>Для поиска физических лиц</strong> — вводите <strong>фамилию</strong><br>
+          <span class="text-sm">Примеры: Навальный, Яшин, Кара-Мурза, Сотникова</span>
+        </div>
+      </div>
+
       <div class="flex gap-3 mb-6">
         <input id="searchInput" type="text" 
                class="flex-1 p-5 rounded-2xl border focus:border-blue-500 text-base"
-               placeholder="Введите ФИО или название (например: Алексей Навальный)">
+               placeholder="Фамилия (для человека) или название организации...">
         
         <select id="typeFilter" class="p-5 rounded-2xl border">
           <option value="">Все списки</option>
@@ -76,12 +87,36 @@
         🔍 Искать
       </button>
 
-      <!-- Примеры -->
-      <div class="mt-6 text-xs text-gray-500 flex flex-wrap gap-2 justify-center">
-        <span onclick="quickSearch('Алексей Навальный')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border">Алексей Навальный</span>
-        <span onclick="quickSearch('Яшин Илья')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border">Яшин Илья</span>
-        <span onclick="quickSearch('ОВД-Инфо')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border">ОВД-Инфо</span>
-        <span onclick="quickSearch('Мемориал')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border">Мемориал</span>
+      <!-- Быстрые примеры — разделены -->
+      <div class="mt-8">
+        <p class="text-xs font-medium text-gray-500 mb-3">ПОПУЛЯРНЫЕ ПРИМЕРЫ</p>
+        
+        <!-- Личности -->
+        <div class="mb-5">
+          <p class="text-xs uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-2">
+            👤 Личности (вводи фамилию)
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span onclick="quickSearch('Навальный')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Навальный</span>
+            <span onclick="quickSearch('Яшин')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Яшин</span>
+            <span onclick="quickSearch('Кара-Мурза')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Кара-Мурза</span>
+            <span onclick="quickSearch('Сотникова')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Сотникова</span>
+            <span onclick="quickSearch('Быков')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Быков</span>
+          </div>
+        </div>
+
+        <!-- Организации -->
+        <div>
+          <p class="text-xs uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-2">
+            🏢 Организации
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span onclick="quickSearch('ОВД-Инфо')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">ОВД-Инфо</span>
+            <span onclick="quickSearch('Мемориал')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Мемориал</span>
+            <span onclick="quickSearch('Сахаровский центр')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Сахаровский центр</span>
+            <span onclick="quickSearch('Медуза')" class="cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-2xl border text-sm">Медуза</span>
+          </div>
+        </div>
       </div>
 
       <div id="searchResults" class="mt-10"></div>
@@ -93,11 +128,11 @@
       <div class="grid md:grid-cols-2 gap-8">
         <div class="flex gap-4">
           <span class="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-xs font-medium whitespace-nowrap mt-0.5">ИНОАГЕНТ</span>
-          <p class="text-gray-700">Физлица и организации, признанные иностранными агентами по ФЗ-255.</p>
+          <p class="text-gray-700">Физические лица и организации, признанные иностранными агентами.</p>
         </div>
         <div class="flex gap-4">
           <span class="bg-red-100 text-red-700 px-4 py-1 rounded-full text-xs font-medium whitespace-nowrap mt-0.5">НЕЖЕЛАТЕЛЬНАЯ</span>
-          <p class="text-gray-700">Организации, деятельность которых признана нежелательной на территории РФ (ФЗ-255).</p>
+          <p class="text-gray-700">Организации, деятельность которых признана нежелательной на территории РФ.</p>
         </div>
       </div>
     </div>
@@ -108,23 +143,6 @@
 
     function normalize(str) {
       return str.toLowerCase().replace(/\s+/g, ' ').trim();
-    }
-
-    // НОВАЯ УЛУЧШЕННАЯ ФУНКЦИЯ ПОИСКА
-    function matchesSearch(query, name) {
-      const qNorm = normalize(query);
-      const nNorm = normalize(name);
-      
-      if (!qNorm) return false;
-      if (nNorm.includes(qNorm)) return true; // точное совпадение подстроки
-
-      const qWords = qNorm.split(' ').filter(Boolean);
-      const nWords = nNorm.split(' ').filter(Boolean);
-
-      // Каждое слово из запроса должно быть в имени (в любом порядке)
-      return qWords.every(qw => 
-        nWords.some(nw => nw.includes(qw) || qw.includes(nw))
-      );
     }
 
     function loadDB() {
@@ -232,17 +250,17 @@
     }
 
     function searchName() {
-      const query = document.getElementById('searchInput').value.trim();
+      const query = normalize(document.getElementById('searchInput').value);
       const filter = document.getElementById('typeFilter').value;
-      if (!query) return alert('Введите имя или название');
+      if (!query) return alert('Введите фамилию или название');
 
       const results = DB.filter(item => 
-        matchesSearch(query, item.name) && (!filter || item.type === filter)
+        normalize(item.name).includes(query) && (!filter || item.type === filter)
       );
 
       const div = document.getElementById('searchResults');
       if (!results.length) {
-        div.innerHTML = `<p class="text-center text-gray-500 py-12 text-xl">Ничего не найдено по запросу «${query}»</p>`;
+        div.innerHTML = `<p class="text-center text-gray-500 py-12 text-xl">Ничего не найдено по запросу «${query}»<br><span class="text-sm">Попробуйте ввести только фамилию для физлиц</span></p>`;
         return;
       }
 
